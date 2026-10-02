@@ -1,0 +1,17 @@
+name: ainexus-dev
+
+services:
+  postgres:
+    image: postgres:17
+    restart: on-failure
+    environment:
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_USER: "username"
+      POSTGRES_DB: "database"
+    ports:
+      - 5432:5432
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 2GB
