@@ -6,10 +6,12 @@ from fastapi import FastAPI
 
 from auth.bootstrap.di import initialization_async_container
 from auth.common.cors_ext import CorrectCORSMiddleware
+from auth.common.logger import init_logging, ExceptionLoggingMiddleware
 from auth.presentation.api.routers import router as api_router
 
 
 def initialization_app() -> FastAPI:
+    init_logging()
     container = initialization_async_container()
 
     @asynccontextmanager
@@ -37,6 +39,7 @@ def initialization_app() -> FastAPI:
     )
 
     app.include_router(api_router)
+    app.add_middleware(ExceptionLoggingMiddleware)
     app.add_middleware(
         CorrectCORSMiddleware,
         allow_origins=["*"],
