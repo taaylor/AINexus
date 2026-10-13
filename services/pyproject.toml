@@ -10,7 +10,7 @@ auth = [
     "anyio==4.15.1",
     "dishka==1.10.1",
     "fastapi==0.141.1",
-    "gunicorn==26.2.0",
+    "uvicorn==0.54.0",
     "orjson==3.12.0",
     "pydantic-settings==2.15.0",
     "sqlalchemy==2.0.54",
@@ -18,27 +18,49 @@ auth = [
     "uuid7==0.1.0",
     "greenlet==3.5.6",
     "loguru==0.7.3",
+    "argon2-cffi==25.1.0",
+    "pyjwt[crypto]==2.15.1",
 ]
-lint = ["pyrefly==1.3.1", "ruff==0.16.8"]
+lint = ["pre-commit==4.6.2", "pyrefly==1.3.1", "ruff==0.16.8"]
 
 
 [tool.pyrefly]
 project-includes = ["auth"]
 project-excludes = ["**/__pycache__", "**/.venv"]
-search-path = ["auth"]
 python-version = "3.12"
 preset = "strict"
 
 [tool.ruff]
 target-version = "py312"
 line-length = 92
-src = ["auth"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "RUF"]
+select = [
+    "BLE",
+    "C90",
+    "E",
+    "F",
+    "G",
+    "I",
+    "ICN",
+    "ISC",
+    "PLE",
+    "Q",
+    "RUF006",
+    "RUF100",
+    "T10",
+    "T20",
+    "TID",
+    "UP",
+    "W",
+]
 ignore = ["E501", "RUF001"]
+fixable = ["ALL"]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-line-ending = "lf"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false

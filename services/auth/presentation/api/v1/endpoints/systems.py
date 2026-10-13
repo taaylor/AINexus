@@ -1,14 +1,13 @@
-from dishka import FromDishka
-from dishka.integrations.fastapi import inject
-from fastapi.routing import APIRouter
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
 from fastapi.requests import Request
+from fastapi.routing import APIRouter
+from starlette import status
 
 from auth.presentation.api.v1.schemes.system import HealthResponse
 
-router = APIRouter(prefix="/system")
+router = APIRouter(
+    prefix="/systems",
+    tags=["Systems"],
+)
 
 
 @router.get(
@@ -17,17 +16,22 @@ router = APIRouter(prefix="/system")
     status_code=status.HTTP_200_OK,
     summary="Check system health",
     description="Returns the current health status of the service.",
-    tags=["system"],
 )
-@inject
-async def health_system(
-    request: Request,
-    sasession: FromDishka[AsyncSession],
-) -> HealthResponse:
-    await sasession.execute(select(1))
+async def health_system(request: Request) -> HealthResponse:
+    (
+        host,
+        port,
+    ) = (
+        (
+            request.client.host,
+            request.client.port,
+        )
+        if request.client is not None
+        else (None, None)
+    )
     return HealthResponse(
         status="ok",
-        ip_address=request.client.host,
-        port=request.client.port,
+        ip_address=host,
+        port=port,
         user_agent=request.headers.get("User-Agent"),
     )

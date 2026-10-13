@@ -9,8 +9,9 @@ Create Date: 2026-10-02 18:53:04.719196
 from collections.abc import Sequence
 
 from alembic import op
-from auth.common.settings import settings
 from sqlalchemy.schema import CreateSchema
+
+from auth.common.settings import settings
 
 # revision identifiers, used by Alembic.
 revision: str = "f0f49675818f"
