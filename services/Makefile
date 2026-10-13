@@ -9,16 +9,16 @@ pyclean:
 
 
 apprun:
-	uv run gunicorn auth.main:app \
-		--worker-class asgi \
-		--logger-class auth.common.logger.GunicornLoguruLogger \
-		--bind 0.0.0.0:8000 \
-		--access-logfile - \
-		--access-logformat '%(h)s %(m)s %(U)s %(s)s %(L)s s' \
-		--graceful-timeout 10 \
-		--asgi-lifespan on \
+	uv run --group auth uvicorn auth.main:app \
+		--host 0.0.0.0 \
+		--port 8000 \
 		--log-level info \
-		--capture-output
+		--log-config auth/common/json/logging.json \
+		--access-log \
+		--timeout-graceful-shutdown 10 \
+		--lifespan on \
+		--workers 2
+
 
 migrate:
 	uv run alembic -c auth/infrastructure/database/alembic.ini upgrade head

@@ -1,4 +1,3 @@
-import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -12,6 +11,15 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from auth.common.settings import Settings
+from auth.domain.ports.repository.user_credentials_repo import (
+    IUserCredentialsRepository,
+)
+from auth.domain.ports.repository.users_repo import IUsersRepository
+from auth.domain.ports.unit_of_work import IUnitOfWork
+from auth.infrastructure.database.repository.user_credentials import (
+    UserCredentialsRepository,
+)
+from auth.infrastructure.database.repository.users import UsersRepository
 from auth.infrastructure.database.unit_of_work import UnitOfWork
 
 
@@ -71,5 +79,19 @@ class DatabaseProvider(Provider):
     def unit_of_work(
         self,
         session: AsyncSession,
-    ) -> UnitOfWork:
+    ) -> IUnitOfWork:
         return UnitOfWork(session)
+
+    @provide(scope=Scope.REQUEST)
+    async def users_db_repo(
+        self,
+        session: AsyncSession,
+    ) -> IUsersRepository:
+        return UsersRepository(session=session)
+
+    @provide(scope=Scope.REQUEST)
+    async def user_credentials_db_repo(
+        self,
+        session: AsyncSession,
+    ) -> IUserCredentialsRepository:
+        return UserCredentialsRepository(session=session)

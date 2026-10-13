@@ -5,10 +5,11 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.domain.ports.unit_of_work import IUnitOfWork
 from auth.infrastructure.database.enums import IsolationLevel
 
 
-class UnitOfWork:
+class UnitOfWork(IUnitOfWork):
     __slots__: tuple[str, ...] = ("isolation", "session")
 
     def __init__(

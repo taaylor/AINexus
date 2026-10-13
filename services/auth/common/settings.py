@@ -2,7 +2,7 @@ import logging
 from functools import cached_property
 from typing import Final, Self
 
-from pydantic import PostgresDsn, SecretStr
+from pydantic import Field, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,39 @@ class DatabaseSettings(BaseSettings):
         }
 
 
+class HasherSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="HASHER_",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+    time_cost: int = 2
+    memory_cost: int = 51200
+    parallelism: int = 1
+    hash_len: int = 32
+    salt_len: int = 16
+
+
+class JwtSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="JWT_",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+    private_key: SecretStr
+    public_key: SecretStr
+    access_token_ttl_seconds: int = Field(default=900, gt=0)
+    refresh_token_ttl_seconds: int = Field(default=2_592_000, gt=0)
+    algo_access: str = "RS256"
+    algo_refresh: str = "SHA-256"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -61,6 +94,8 @@ class Settings(BaseSettings):
 
     debug: bool = False
     postgres: DatabaseSettings = DatabaseSettings()
+    hasher: HasherSettings = HasherSettings()
+    jwt: JwtSettings = JwtSettings()
 
     @classmethod
     def create_settings(cls) -> Self:

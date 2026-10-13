@@ -1,9 +1,11 @@
 from logging.config import fileConfig
 
 from alembic import context
-from auth.common.settings import settings
-from auth.infrastructure.database.bsmodel import BaseModel
 from sqlalchemy import engine_from_config, pool
+
+from auth.common.settings import settings
+from auth.infrastructure.database import models  # noqa: F401
+from auth.infrastructure.database.bsmodel import BaseModel
 
 config = context.config
 
