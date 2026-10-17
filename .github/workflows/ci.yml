@@ -1,0 +1,52 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: database
+          POSTGRES_USER: username
+          POSTGRES_PASSWORD: password
+
+    env:
+      PYTHONPATH: services
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USERNAME: username
+      POSTGRES_PASSWORD: password
+      POSTGRES_DATABASE: database
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: make install-deps
+
+      - name: Generate test JWT keys
+        run: make generate-ci-jwt-keys
+
+      - name: Check lint & types
+        run: |
+          make check-types
+          make check-lint
+          make check-format
+
+      - name: Apply database migrations
+        run: make ci-migrate
+
+      - name: Run tests
+        run: make test
