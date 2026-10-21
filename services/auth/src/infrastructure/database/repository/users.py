@@ -72,7 +72,6 @@ class UsersRepository(IUsersRepository):
             u.surname,
             u.patronymic,
             u.avatar_key,
-            u.organization_id,
             c.email,
             c.telegram,
             c.is_verified_email
@@ -88,7 +87,6 @@ class UsersRepository(IUsersRepository):
                 UserModel.surname,
                 UserModel.patronymic,
                 UserModel.avatar_key,
-                UserModel.organization_id,
                 UserCredentialModel.email,
                 UserCredentialModel.telegram,
                 UserCredentialModel.is_verified_email,
@@ -109,7 +107,6 @@ class UsersRepository(IUsersRepository):
             surname=result.surname,
             patronymic=result.patronymic,
             avatar_key=result.avatar_key,
-            organization_id=result.organization_id,
             email=result.email,
             telegram=result.telegram,
             is_verified_email=result.is_verified_email,
@@ -126,10 +123,9 @@ class UsersRepository(IUsersRepository):
             name,
             surname,
             patronymic,
-            is_platform_admin,
-            organization_id
+            is_platform_admin
         )
-        VALUES (:username, :name, :surname, :patronymic, FALSE, NULL)
+        VALUES (:username, :name, :surname, :patronymic, FALSE)
         ON CONFLICT DO NOTHING
         RETURNING id, username, name, surname, patronymic
         """
@@ -141,7 +137,6 @@ class UsersRepository(IUsersRepository):
                 surname=user.surname,
                 patronymic=user.patronymic,
                 is_platform_admin=False,
-                organization_id=None,
             )
             .on_conflict_do_nothing(index_elements=["username"])
             .returning(

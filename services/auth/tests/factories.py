@@ -1,5 +1,4 @@
 from typing import Any, override
-from uuid import UUID
 
 from polyfactory import PostGenerated, Use
 from polyfactory.factories.pydantic_factory import ModelFactory
@@ -51,7 +50,6 @@ class UserModelFactory(SQLAlchemyFactory[UserModel]):
     patronymic: str | None = None
     is_platform_admin = False
     avatar_key: str | None = None
-    organization_id: UUID | None = None
 
 
 def _password_repeat(_name: str, values: dict[str, Any]) -> str:

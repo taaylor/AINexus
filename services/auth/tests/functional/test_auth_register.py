@@ -26,7 +26,7 @@ async def test_user_register(
     user_id = UUID(
         assert_response(
             client.post(
-                "/api/v1/auth/register",
+                "/api/auth-service/public/v1/auth/register",
                 json=payload,
             ),
             expected_code=status.HTTP_201_CREATED,
@@ -54,7 +54,7 @@ async def test_user_register_invalid_password(
 
     assert_response(
         client.post(
-            "/api/v1/auth/register",
+            "/api/auth-service/public/v1/auth/register",
             json=payload,
         ),
         expected_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -68,7 +68,7 @@ async def test_user_register_email_exists(
 ) -> None:
     assert_response(
         client.post(
-            "/api/v1/auth/register",
+            "/api/auth-service/public/v1/auth/register",
             json=factories.UserRegisterInputSchemaFactory.build_json(email=user_cred.email),
         ),
         expected_code=status.HTTP_409_CONFLICT,
@@ -82,7 +82,7 @@ async def test_user_register_username_exists(
 ) -> None:
     assert_response(
         client.post(
-            "/api/v1/auth/register",
+            "/api/auth-service/public/v1/auth/register",
             json=factories.UserRegisterInputSchemaFactory.build_json(
                 username=user.username
             ),

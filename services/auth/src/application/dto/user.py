@@ -15,7 +15,6 @@ class UserProfileOutput:
     surname: str | None
     patronymic: str | None
     avatar_key: str | None
-    organization_id: UUID | None
     email: str
     telegram: str | None
     is_verified_email: bool

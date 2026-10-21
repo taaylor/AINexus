@@ -7,6 +7,7 @@ class IUserSessionsRepository(Protocol):
     async def create(
         self,
         *,
+        session_id: UUID,
         user_id: UUID,
         refresh_token_hash: str,
         expires_at: datetime,

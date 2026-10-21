@@ -6,8 +6,8 @@ from uuid import UUID
 @dataclass(frozen=True, slots=True)
 class TokenPayload:
     id: UUID
+    session_id: UUID
     username: str
-    role: str
     is_platform_admin: bool
     is_verified_email: bool
 

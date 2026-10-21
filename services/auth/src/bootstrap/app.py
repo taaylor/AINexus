@@ -28,13 +28,14 @@ def initialization_app() -> FastAPI:
     app = FastAPI(
         title="AINexus.Auth",
         version="0.1.0",
-        docs_url="/docs/swagger",
-        redoc_url="/docs/redoc",
+        openapi_url="/auth-service/docs/openapi.json",
+        docs_url="/auth-service/docs/swagger",
+        redoc_url="/auth-service/docs/redoc",
         lifespan=lifespan,
         summary="AINexus Auth Service",
         description="""The authentication and user access management service in the NexusAI platform.
         It is responsible for registration, login, issuance and renewal of JWT tokens,
-        session management, roles and access rights,
+        session management and user access,
         as well as integration with other microservices of the platform.
         """,
         exception_handlers=exception_handlers,

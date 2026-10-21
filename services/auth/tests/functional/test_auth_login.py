@@ -34,7 +34,7 @@ async def test_user_login(
 ) -> None:
     assert_response(
         client.post(
-            "/api/v1/auth/login",
+            "/api/auth-service/public/v1/auth/login",
             json={
                 "login": (user.username if login_field == "username" else user_cred.email),
                 "password": user_password,
@@ -67,7 +67,7 @@ async def test_user_login_invalid_password(
 ) -> None:
     assert_response(
         client.post(
-            "/api/v1/auth/login",
+            "/api/auth-service/public/v1/auth/login",
             json={
                 "login": user.username,
                 "password": faker.password(),
@@ -84,7 +84,7 @@ async def test_user_login_user_not_found(
 ) -> None:
     assert_response(
         client.post(
-            "/api/v1/auth/login",
+            "/api/auth-service/public/v1/auth/login",
             json={
                 "login": faker.unique.email(),
                 "password": faker.password(),
