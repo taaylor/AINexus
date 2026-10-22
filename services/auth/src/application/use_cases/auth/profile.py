@@ -31,7 +31,6 @@ class UserProfileUseCase(IUseCase[UserProfileInput, UserProfileOutput]):
             surname=profile.surname,
             patronymic=profile.patronymic,
             avatar_key=profile.avatar_key,
-            organization_id=profile.organization_id,
             email=profile.email,
             telegram=profile.telegram,
             is_verified_email=profile.is_verified_email,

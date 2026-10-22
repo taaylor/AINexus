@@ -75,8 +75,7 @@ class JwtSettings(BaseSettings):
     )
 
     private_key: SecretStr
-    public_key: SecretStr
-    access_token_ttl_seconds: int = Field(default=900, gt=0)
+    access_token_ttl_seconds: int = Field(default=1200, gt=0)
     refresh_token_ttl_seconds: int = Field(default=2_592_000, gt=0)
     algo_access: str = "RS256"
 

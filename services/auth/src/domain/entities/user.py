@@ -22,7 +22,6 @@ class User:
     patronymic: str | None
     is_platform_admin: bool
     avatar_key: str | None
-    organization_id: UUID
     created_at: datetime
     updated_at: datetime
     cred: UserCred
@@ -60,7 +59,6 @@ class UserProfile:
     surname: str | None
     patronymic: str | None
     avatar_key: str | None
-    organization_id: UUID | None
     email: str
     telegram: str | None
     is_verified_email: bool

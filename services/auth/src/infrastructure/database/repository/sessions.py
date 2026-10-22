@@ -15,6 +15,7 @@ class UserSessionsRepository(IUserSessionsRepository):
     async def create(
         self,
         *,
+        session_id: UUID,
         user_id: UUID,
         refresh_token_hash: str,
         expires_at: datetime,
@@ -22,6 +23,7 @@ class UserSessionsRepository(IUserSessionsRepository):
         ip_address: str | None,
     ) -> None:
         stmt = insert(UserSessionModel).values(
+            id=session_id,
             user_id=user_id,
             refresh_token=refresh_token_hash,
             expires_at=expires_at,

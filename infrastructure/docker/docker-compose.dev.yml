@@ -1,18 +1,58 @@
 name: ainexus-dev
 
+x-restart: &x-restart-svc
+  restart: on-failure
+
 services:
+  auth:
+    build:
+      context: ../..
+      dockerfile: services/auth/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 512M
+  nginx:
+    build:
+      context: ../nginx
+      dockerfile: Dockerfile
+    depends_on:
+      - auth
+    volumes:
+      - ../nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ../nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d:ro
+      - ../nginx/lua:/etc/nginx/lua:ro
+    environment:
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+    ports:
+      - '127.0.0.1:80:80'
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 256MB
+
   postgres:
     image: postgres:17
-    restart: on-failure
     environment:
       POSTGRES_PASSWORD: "password"
       POSTGRES_USER: "username"
       POSTGRES_DB: "database"
     ports:
-      - 5432:5432
-    shm_size: 256mb
+      - '127.0.0.1:5432:5432'
+    <<: *x-restart-svc
     deploy:
       resources:
         limits:
-          cpus: 2
+          cpus: 1
           memory: 2GB
+    shm_size: 256mb

@@ -1,4 +1,7 @@
-from typing import Final
+from typing import Final, cast
+from uuid import UUID
+
+from uuid_extensions import uuid7
 
 from auth.src.application.dto.user_login import UserLoginInput
 from auth.src.common.exceptions import AuthenticationException
@@ -52,11 +55,12 @@ class UserLoginUseCase(IUseCase[UserLoginInput, TokenPair]):
             ):
                 raise AuthenticationException("Invalid login or password")
 
+            session_id = uuid7()
             token_pair = self._token_provider.create_token_pair(
                 payload=TokenPayload(
                     id=user.id,
+                    session_id=cast(UUID, session_id),
                     username=user.username,
-                    role="user",
                     is_platform_admin=user.is_platform_admin,
                     is_verified_email=user.is_verified_email,
                 ),
@@ -67,6 +71,7 @@ class UserLoginUseCase(IUseCase[UserLoginInput, TokenPair]):
             )
 
             await self._sessions_repository.create(
+                session_id=cast(UUID, session_id),
                 user_id=user.id,
                 refresh_token_hash=refresh_token_hash,
                 expires_at=token_pair.refresh_token_expires_at,
