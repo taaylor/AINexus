@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Final, Self
 
 from loguru import logger
-from pydantic import Field, PostgresDsn, SecretStr
+from pydantic import Field, PostgresDsn, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,33 @@ class DatabaseSettings(BaseSettings):
         }
 
 
+class RedisSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="REDIS_",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+    db: int = 0
+    host: str = "localhost"
+    port: int = 6379
+    password: SecretStr = SecretStr("password")
+    session_revoked_key_format: str = "auth:revoked-session:{session_id}"
+    session_revoked_value: str = "true"
+
+    @cached_property
+    def dsn(self) -> str:
+        return RedisDsn.build(
+            scheme="redis",
+            host=self.host,
+            port=self.port,
+            path=str(self.db),
+            password=self.password.get_secret_value(),
+        ).unicode_string()
+
+
 class HasherSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -92,6 +119,7 @@ class Settings(BaseSettings):
 
     debug: bool = False
     postgres: DatabaseSettings = DatabaseSettings()
+    redis: RedisSettings = RedisSettings()
     hasher: HasherSettings = HasherSettings()
     jwt: JwtSettings = JwtSettings()
 

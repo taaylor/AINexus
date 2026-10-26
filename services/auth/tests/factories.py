@@ -1,11 +1,13 @@
+from datetime import UTC, datetime, timedelta
 from typing import Any, override
+from uuid import uuid4
 
 from polyfactory import PostGenerated, Use
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
 from pydantic import BaseModel
 
-from auth.src.infrastructure.database.models import UserModel
+from auth.src.infrastructure.database.models import UserModel, UserSessionModel
 from auth.src.presentation.api.v1.schemes.user_register import UserRegisterInputSchema
 from auth.tests.types import AnyJSON, AnyKwargs
 
@@ -50,6 +52,20 @@ class UserModelFactory(SQLAlchemyFactory[UserModel]):
     patronymic: str | None = None
     is_platform_admin = False
     avatar_key: str | None = None
+
+
+class UserSessionModelFactory(SQLAlchemyFactory[UserSessionModel]):
+    __model__ = UserSessionModel
+    __set_primary_key__ = False
+    __set_foreign_keys__ = False
+    __set_relationships__ = False
+
+    user_id = Use(uuid4)
+    refresh_token = Use(SQLAlchemyFactory.__faker__.unique.sha256)
+    revoked_at: datetime | None = None
+    user_agent = Use(SQLAlchemyFactory.__faker__.user_agent)
+    ip_address = Use(SQLAlchemyFactory.__faker__.ipv4)
+    expires_at = Use(lambda: datetime.now(UTC) + timedelta(days=30))
 
 
 def _password_repeat(_name: str, values: dict[str, Any]) -> str:

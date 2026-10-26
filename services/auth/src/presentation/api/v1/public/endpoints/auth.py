@@ -8,6 +8,7 @@ from starlette import status
 from starlette.requests import Request
 
 from auth.src.application.dto.user_login import UserLoginInput
+from auth.src.application.dto.user_refresh import UserRefreshInput
 from auth.src.application.dto.user_register import (
     UserRegisterInput,
     UserRegisterOutput,
@@ -17,6 +18,10 @@ from auth.src.domain.ports import IUseCase
 from auth.src.presentation.api.v1.schemes.user_login import (
     UserLoginInputSchema,
     UserLoginOutputSchema,
+)
+from auth.src.presentation.api.v1.schemes.user_refresh import (
+    UserRefreshInputSchema,
+    UserRefreshOutputSchema,
 )
 from auth.src.presentation.api.v1.schemes.user_register import (
     UserRegisterInputSchema,
@@ -72,3 +77,22 @@ async def login_user(
     )
 
     return UserLoginOutputSchema.model_validate(output_data)
+
+
+@router.post(
+    "/refresh",
+    response_model=UserRefreshOutputSchema,
+    status_code=status.HTTP_200_OK,
+    summary="Refresh an access token",
+)
+async def refresh_user_tokens(
+    input_data: UserRefreshInputSchema,
+    use_case: Annotated[
+        IUseCase[UserRefreshInput, TokenPair],
+        FromComponent("user_refresh"),
+    ],
+) -> UserRefreshOutputSchema:
+    output_data = await use_case.execute(
+        input_data=input_data.to_dto(UserRefreshInput),
+    )
+    return UserRefreshOutputSchema.model_validate(output_data)

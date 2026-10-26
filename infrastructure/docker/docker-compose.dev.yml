@@ -9,11 +9,14 @@ services:
       context: ../..
       dockerfile: services/auth/Dockerfile
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
+      - redis
     environment:
       POSTGRES_HOST: postgres
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      REDIS_HOST: redis
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
     <<: *x-restart-svc
     deploy:
       resources:
@@ -32,6 +35,10 @@ services:
       - ../nginx/lua:/etc/nginx/lua:ro
     environment:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      REDIS_HOST: redis
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
     ports:
       - '127.0.0.1:80:80'
     <<: *x-restart-svc
@@ -56,3 +63,17 @@ services:
           cpus: 1
           memory: 2GB
     shm_size: 256mb
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-password}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+    ports:
+      - '127.0.0.1:6379:6379'
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 0.25
+          memory: 256M

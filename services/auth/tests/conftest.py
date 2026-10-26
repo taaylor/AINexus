@@ -16,6 +16,7 @@ pytest_plugins = (
     "auth.tests.plugins.asession",
     "auth.tests.plugins.faker",
     "auth.tests.plugins.hasher",
+    "auth.tests.plugins.sessions",
     "auth.tests.plugins.users",
     "auth.tests.plugins.user_cred",
 )

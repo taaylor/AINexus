@@ -1,5 +1,5 @@
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Final
 
 import jwt
@@ -27,7 +27,12 @@ class JWTCoder:
         self.refresh_token_ttl_seconds = settings.jwt.refresh_token_ttl_seconds
         self.algo_access = settings.jwt.algo_access
 
-    def create_token_pair(self, *, payload: TokenPayload) -> TokenPair:
+    def create_token_pair(
+        self,
+        *,
+        payload: TokenPayload,
+        refresh_token_expires_at: datetime | None = None,
+    ) -> TokenPair:
         datetimenow = datetime_with_tz()
 
         claims = {
@@ -43,8 +48,10 @@ class JWTCoder:
 
         access_token = jwt.encode(claims, self.private_key, algorithm=self.algo_access)
         refresh_token = secrets.token_urlsafe(64)
-        refresh_token_exp_at = datetimenow + timedelta(
-            seconds=self.refresh_token_ttl_seconds
+        token_pair_refresh_token_expires_at = (
+            refresh_token_expires_at
+            if refresh_token_expires_at is not None
+            else datetimenow + timedelta(seconds=self.refresh_token_ttl_seconds)
         )
 
         return TokenPair(
@@ -52,5 +59,5 @@ class JWTCoder:
             refresh_token=refresh_token,
             token_type="Bearer",
             expires_in=self.access_token_ttl_seconds,
-            refresh_token_expires_at=refresh_token_exp_at,
+            refresh_token_expires_at=token_pair_refresh_token_expires_at,
         )

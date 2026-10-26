@@ -39,7 +39,11 @@ class UserSessionModel(BaseModel, IdentifiableMixin):
     __tablename__ = "user_sessions"
 
     user_id: Mapped[UUID] = mapped_column(nullable=False)
-    refresh_token: Mapped[str] = mapped_column(String, nullable=False)
+    refresh_token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     user_agent: Mapped[str | None] = mapped_column(String, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(String, nullable=True)
