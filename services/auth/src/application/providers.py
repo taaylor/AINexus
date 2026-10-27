@@ -4,14 +4,24 @@ from dishka import FromComponent, Provider, Scope, provide
 
 from auth.src.application.dto.user import UserProfileInput, UserProfileOutput
 from auth.src.application.dto.user_login import UserLoginInput
+from auth.src.application.dto.user_logout import UserLogoutInput
+from auth.src.application.dto.user_refresh import UserRefreshInput
 from auth.src.application.dto.user_register import UserRegisterInput, UserRegisterOutput
+from auth.src.application.dto.user_sessions import (
+    UserListSessionsInput,
+    UserListSessionsOutput,
+)
 from auth.src.application.use_cases.auth.login import UserLoginUseCase
+from auth.src.application.use_cases.auth.logout import UserLogoutUseCase
 from auth.src.application.use_cases.auth.profile import UserProfileUseCase
+from auth.src.application.use_cases.auth.refresh import UserRefreshUseCase
 from auth.src.application.use_cases.auth.register import UserRegisterUseCase
+from auth.src.application.use_cases.sessions.list import UserListSessionsUseCase
 from auth.src.common.settings import Settings
 from auth.src.domain.entities.tokens import TokenPair
 from auth.src.domain.ports import (
     IHasher,
+    INoSQL,
     ITokenProvider,
     IUnitOfWork,
     IUseCase,
@@ -80,6 +90,64 @@ class ApplicationProvider(Provider):
             sessions_repository=sessions_repository,
             token_provider=token_provider,
         )
+
+    @provide(
+        scope=Scope.REQUEST,
+        provides=Annotated[
+            IUseCase[UserRefreshInput, TokenPair],
+            FromComponent("user_refresh"),
+        ],
+    )
+    def user_refresh_use_case(
+        self,
+        unit_of_work: IUnitOfWork,
+        sha256_hasher: Annotated[IHasher, FromComponent("sha256")],
+        sessions_repository: IUserSessionsRepository,
+        users_repository: IUsersRepository,
+        token_provider: ITokenProvider,
+    ) -> UserRefreshUseCase:
+        return UserRefreshUseCase(
+            unit_of_work=unit_of_work,
+            sha256_hasher=sha256_hasher,
+            sessions_repository=sessions_repository,
+            users_repository=users_repository,
+            token_provider=token_provider,
+        )
+
+    @provide(
+        scope=Scope.REQUEST,
+        provides=Annotated[
+            IUseCase[UserLogoutInput, None],
+            FromComponent("user_logout"),
+        ],
+    )
+    def user_logout_use_case(
+        self,
+        unit_of_work: IUnitOfWork,
+        sessions_repository: IUserSessionsRepository,
+        nosql_client: INoSQL,
+    ) -> UserLogoutUseCase:
+        return UserLogoutUseCase(
+            unit_of_work=unit_of_work,
+            sessions_repository=sessions_repository,
+            nosql_client=nosql_client,
+            access_token_ttl_seconds=self.settings.jwt.access_token_ttl_seconds,
+            session_revoked_key_format=self.settings.redis.session_revoked_key_format,
+            session_revoked_value=self.settings.redis.session_revoked_value,
+        )
+
+    @provide(
+        scope=Scope.REQUEST,
+        provides=Annotated[
+            IUseCase[UserListSessionsInput, UserListSessionsOutput],
+            FromComponent("user_list_sessions"),
+        ],
+    )
+    def user_list_sessions_use_case(
+        self,
+        sessions_repository: IUserSessionsRepository,
+    ) -> UserListSessionsUseCase:
+        return UserListSessionsUseCase(sessions_repository=sessions_repository)
 
     @provide(
         scope=Scope.REQUEST,

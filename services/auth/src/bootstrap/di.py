@@ -6,11 +6,13 @@ from auth.src.common.settings import settings
 from auth.src.infrastructure.providers.database import DatabaseProvider
 from auth.src.infrastructure.providers.hasher import HasherProvider
 from auth.src.infrastructure.providers.jwt import JwtProvider
+from auth.src.infrastructure.providers.redis import RedisProvider
 
 
 def initialization_async_container() -> AsyncContainer:
     return make_async_container(
         DatabaseProvider(settings=settings),
+        RedisProvider(settings=settings),
         HasherProvider(settings=settings),
         JwtProvider(settings=settings),
         ApplicationProvider(settings=settings),

@@ -9,6 +9,7 @@ from auth.src.domain.entities.user import (
     RegisteredUser,
     UserLogin,
     UserProfile,
+    UserTokenData,
 )
 from auth.src.domain.ports.repository.users_repo import IUsersRepository
 from auth.src.infrastructure.database.models import UserCredentialModel, UserModel
@@ -109,6 +110,41 @@ class UsersRepository(IUsersRepository):
             avatar_key=result.avatar_key,
             email=result.email,
             telegram=result.telegram,
+            is_verified_email=result.is_verified_email,
+        )
+
+    async def fetch_by_id_token_data(self, *, user_id: UUID) -> UserTokenData | None:
+        """Fetch user data required to create access token claims.
+
+        SQL:
+
+        SELECT
+            u.id,
+            u.username,
+            u.is_platform_admin,
+            uc.is_verified_email
+        FROM auth.users AS u
+            JOIN auth.users_cred AS uc ON uc.id = u.id
+        WHERE u.id = :user_id;
+        """
+        stmt = (
+            select(
+                UserModel.id,
+                UserModel.username,
+                UserModel.is_platform_admin,
+                UserCredentialModel.is_verified_email,
+            )
+            .join(UserCredentialModel, UserModel.id == UserCredentialModel.id)
+            .where(UserModel.id == user_id)
+        )
+        result = (await self._session.execute(stmt)).one_or_none()
+        if result is None:
+            return None
+
+        return UserTokenData(
+            id=result.id,
+            username=result.username,
+            is_platform_admin=result.is_platform_admin,
             is_verified_email=result.is_verified_email,
         )
 

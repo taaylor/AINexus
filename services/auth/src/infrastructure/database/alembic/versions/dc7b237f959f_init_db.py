@@ -1,8 +1,8 @@
 """init db
 
-Revision ID: 9e4728509bf6
+Revision ID: dc7b237f959f
 Revises: f0f49675818f
-Create Date: 2026-10-22 14:13:39.015127
+Create Date: 2026-10-23 15:48:39.125416
 
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "9e4728509bf6"
+revision: str = "dc7b237f959f"
 down_revision: str | Sequence[str] | None = "f0f49675818f"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -25,6 +25,7 @@ def upgrade() -> None:
         "user_sessions",
         sa.Column("user_id", sa.Uuid(), nullable=False),
         sa.Column("refresh_token", sa.String(), nullable=False),
+        sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("user_agent", sa.String(), nullable=True),
         sa.Column("ip_address", sa.String(), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
@@ -42,6 +43,7 @@ def upgrade() -> None:
         ),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_user_sessions")),
+        sa.UniqueConstraint("refresh_token", name=op.f("uq_user_sessions_refresh_token")),
         schema="auth",
     )
     op.create_table(

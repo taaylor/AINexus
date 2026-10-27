@@ -71,3 +71,11 @@ class UserLogin:
     password_hash: str
     is_platform_admin: bool
     is_verified_email: bool
+
+
+@dataclass(frozen=True, slots=True)
+class UserTokenData:
+    id: UUID
+    username: str
+    is_platform_admin: bool
+    is_verified_email: bool

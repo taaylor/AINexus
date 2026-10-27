@@ -16,6 +16,12 @@ jobs:
           POSTGRES_USER: username
           POSTGRES_PASSWORD: password
 
+      redis:
+        image: redis:7-alpine
+        command: ["redis-server", "--requirepass", "password"]
+        ports:
+          - "6379:6379"
+
     env:
       PYTHONPATH: services
       POSTGRES_HOST: localhost
@@ -23,6 +29,7 @@ jobs:
       POSTGRES_USERNAME: username
       POSTGRES_PASSWORD: password
       POSTGRES_DATABASE: database
+      REDIS_PASSWORD: password
 
     steps:
       - name: Checkout repository

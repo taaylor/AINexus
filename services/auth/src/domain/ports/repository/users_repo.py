@@ -6,6 +6,7 @@ from auth.src.domain.entities.user import (
     RegisteredUser,
     UserLogin,
     UserProfile,
+    UserTokenData,
 )
 
 
@@ -14,6 +15,9 @@ class IUsersRepository(Protocol):
         pass
 
     async def fetch_by_id_profile(self, *, user_id: UUID) -> UserProfile | None:
+        pass
+
+    async def fetch_by_id_token_data(self, *, user_id: UUID) -> UserTokenData | None:
         pass
 
     async def create(self, *, user: CreateUser) -> RegisteredUser | None:
