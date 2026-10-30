@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from auth.src.bootstrap.di import initialization_async_container
 from auth.src.common.logger import init_logging
+from auth.src.common.settings import settings
 from auth.src.presentation.api.exchandlers import exception_handlers
 from auth.src.presentation.api.middleware import (
     CorrectCORSMiddleware,
@@ -17,6 +18,7 @@ from auth.src.presentation.api.routers import router as api_router
 def initialization_app() -> FastAPI:
     init_logging()
     container = initialization_async_container()
+    trace_provider = None
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -24,6 +26,8 @@ def initialization_app() -> FastAPI:
             yield
         finally:
             await container.close()
+            if trace_provider is not None:
+                trace_provider.shutdown()
 
     app = FastAPI(
         title="AINexus.Auth",
@@ -51,5 +55,10 @@ def initialization_app() -> FastAPI:
         allow_headers=["*"],
     )
     setup_dishka(container, app)
+
+    if settings.trace:
+        from services.trace.tracer import init_trace
+
+        trace_provider = init_trace(app, service="AINexus.Auth")
 
     return app

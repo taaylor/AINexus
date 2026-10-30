@@ -2,9 +2,11 @@ import hashlib
 import hmac
 
 from auth.src.domain.ports import IHasher
+from services.trace.tracer import traced
 
 
 class SHA256Hasher(IHasher):
+    @traced("auth.token.hash")
     async def to_hash(self, *, string: str) -> str:
         return hashlib.sha256(string.encode()).hexdigest()
 

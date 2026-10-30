@@ -7,6 +7,7 @@ import jwt
 from auth.src.common.settings import Settings
 from auth.src.common.utils import datetime_with_tz
 from auth.src.domain.entities.tokens import TokenPair, TokenPayload
+from services.trace.tracer import traced
 
 
 class JWTCoder:
@@ -27,6 +28,7 @@ class JWTCoder:
         self.refresh_token_ttl_seconds = settings.jwt.refresh_token_ttl_seconds
         self.algo_access = settings.jwt.algo_access
 
+    @traced("auth.token.create_pair")
     def create_token_pair(
         self,
         *,

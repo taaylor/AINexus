@@ -14,6 +14,7 @@ from auth.src.domain.ports import (
 )
 from auth.src.domain.ports.repository.sessions_repo import IUserSessionsRepository
 from auth.src.domain.ports.repository.users_repo import IUsersRepository
+from services.trace.tracer import traced
 
 
 class UserLoginUseCase(IUseCase[UserLoginInput, TokenPair]):
@@ -43,33 +44,35 @@ class UserLoginUseCase(IUseCase[UserLoginInput, TokenPair]):
         self._sessions_repository = sessions_repository
         self._token_provider = token_provider
 
+    @traced("auth.user.login")
     async def execute(self, *, input_data: UserLoginInput) -> TokenPair:
         async with self._unit_of_work:
             user = await self._users_repository.fetch_by_login(
                 login=input_data.login,
             )
 
-            if user is None or not await self._argon2_hasher.verify(
-                string=input_data.password,
-                hashed_string=user.password_hash,
-            ):
-                raise AuthenticationException("Invalid login or password")
+        if user is None or not await self._argon2_hasher.verify(
+            string=input_data.password,
+            hashed_string=user.password_hash,
+        ):
+            raise AuthenticationException("Invalid login or password")
 
-            session_id = uuid7()
-            token_pair = self._token_provider.create_token_pair(
-                payload=TokenPayload(
-                    id=user.id,
-                    session_id=cast(UUID, session_id),
-                    username=user.username,
-                    is_platform_admin=user.is_platform_admin,
-                    is_verified_email=user.is_verified_email,
-                ),
-            )
+        session_id = uuid7()
+        token_pair = self._token_provider.create_token_pair(
+            payload=TokenPayload(
+                id=user.id,
+                session_id=cast(UUID, session_id),
+                username=user.username,
+                is_platform_admin=user.is_platform_admin,
+                is_verified_email=user.is_verified_email,
+            ),
+        )
 
-            refresh_token_hash = await self._sha256_hasher.to_hash(
-                string=token_pair.refresh_token,
-            )
+        refresh_token_hash = await self._sha256_hasher.to_hash(
+            string=token_pair.refresh_token,
+        )
 
+        async with self._unit_of_work:
             await self._sessions_repository.create(
                 session_id=cast(UUID, session_id),
                 user_id=user.id,

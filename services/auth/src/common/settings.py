@@ -22,9 +22,9 @@ class DatabaseSettings(BaseSettings):
     database: str = "database"
     dbschema: str = "auth"
     echo: bool = False
-    pool_recycle: int = 20
-    pool_size: int = 10
-    max_pool_size: int = 10
+    pool_recycle: int = -1
+    pool_size: int = 50
+    max_pool_size: int = 30
     pool_pre_ping: bool = True
 
     @cached_property
@@ -86,7 +86,7 @@ class HasherSettings(BaseSettings):
     )
 
     time_cost: int = 2
-    memory_cost: int = 51200
+    memory_cost: int = 19456
     parallelism: int = 1
     hash_len: int = 32
     salt_len: int = 16
@@ -118,6 +118,7 @@ class Settings(BaseSettings):
     )
 
     debug: bool = False
+    trace: bool = True
     postgres: DatabaseSettings = DatabaseSettings()
     redis: RedisSettings = RedisSettings()
     hasher: HasherSettings = HasherSettings()

@@ -4,6 +4,13 @@ x-restart: &x-restart-svc
   restart: on-failure
 
 services:
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
+    ports:
+      - '127.0.0.1:16686:16686'
+      - '127.0.0.1:4317:4317'
+    <<: *x-restart-svc
+
   auth:
     build:
       context: ../..
@@ -11,7 +18,11 @@ services:
     depends_on:
       - postgres
       - redis
+      - jaeger
     environment:
+      TRACE: "true"
+      TRACE_OTLP_ENDPOINT: http://jaeger:4317
+      TRACE_INSECURE: "true"
       POSTGRES_HOST: postgres
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       REDIS_HOST: redis
@@ -21,8 +32,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: 0.25
-          memory: 512M
+          cpus: 1
+          memory: 1GB
   nginx:
     build:
       context: ../nginx
@@ -45,8 +56,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: 0.25
-          memory: 256MB
+          cpus: 0.5
+          memory: 512M
 
   postgres:
     image: postgres:17
@@ -63,6 +74,8 @@ services:
           cpus: 1
           memory: 2GB
     shm_size: 256mb
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
