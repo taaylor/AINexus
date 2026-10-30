@@ -218,3 +218,6 @@ __marimo__/
 services/docs/
 .DS_Store
 docs/superpowers
+/services/auth/tests/perfomance/dumps/
+infrastructure/docker/pgdata
+report.html

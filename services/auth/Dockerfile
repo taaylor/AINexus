@@ -17,6 +17,7 @@ RUN uv sync \
     --no-editable
 
 COPY services/auth/src ./services/auth/src
+COPY services/trace ./services/trace
 
 
 FROM python:3.12-slim-trixie
@@ -38,6 +39,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=authuser:authuser /app/.venv /app/.venv
 COPY --from=builder --chown=authuser:authuser /app/services/auth/src /app/services/auth/src
+COPY --from=builder --chown=authuser:authuser /app/services/trace /app/services/trace
 
 USER authuser:authuser
 

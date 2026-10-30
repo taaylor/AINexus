@@ -13,12 +13,14 @@ from auth.src.domain.entities.user import (
 )
 from auth.src.domain.ports.repository.users_repo import IUsersRepository
 from auth.src.infrastructure.database.models import UserCredentialModel, UserModel
+from services.trace.tracer import traced
 
 
 class UsersRepository(IUsersRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @traced("auth.user.login.fetch_user")
     async def fetch_by_login(self, *, login: str) -> UserLogin | None:
         """Fetch login credentials by username or email.
 

@@ -48,6 +48,11 @@ class DatabaseProvider(Provider):
             pool_pre_ping=self.settings.postgres.pool_pre_ping,
         )
         try:
+            if self.settings.trace:
+                from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+                SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
+
             yield engine
         finally:
             await engine.dispose()

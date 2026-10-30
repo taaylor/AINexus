@@ -7,12 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.src.domain.entities.session import UserSession, UserSessions, UserSessionSummary
 from auth.src.domain.ports.repository.sessions_repo import IUserSessionsRepository
 from auth.src.infrastructure.database.models import UserSessionModel
+from services.trace.tracer import traced
 
 
 class UserSessionsRepository(IUserSessionsRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @traced("auth.user.login.persist_session")
     async def create(
         self,
         *,

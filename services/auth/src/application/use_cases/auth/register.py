@@ -8,6 +8,7 @@ from auth.src.domain.ports.repository.user_credentials_repo import (
     IUserCredentialsRepository,
 )
 from auth.src.domain.ports.repository.users_repo import IUsersRepository
+from services.trace.tracer import traced
 
 
 class UserRegisterUseCase(IUseCase[UserRegisterInput, UserRegisterOutput]):
@@ -31,6 +32,7 @@ class UserRegisterUseCase(IUseCase[UserRegisterInput, UserRegisterOutput]):
         self._users_repository = users_repository
         self._user_credentials_repository = user_credentials_repository
 
+    @traced("auth.user.register")
     async def execute(self, *, input_data: UserRegisterInput) -> UserRegisterOutput:
         password_hash = await self._argon2_hasher.to_hash(
             string=input_data.password,
