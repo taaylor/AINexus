@@ -42,30 +42,33 @@ class UserRefreshUseCase(IUseCase[UserRefreshInput, TokenPair]):
             session = await self._sessions_repository.fetch_by_refresh_token_hash(
                 refresh_token_hash=refresh_token_hash,
             )
+
             if session is None or session.revoked_at is not None:
                 raise AuthenticationException("Invalid or expired refresh token")
 
             user = await self._users_repository.fetch_by_id_token_data(
                 user_id=session.user_id,
             )
+
             if user is None:
                 raise AuthenticationException("Invalid or expired refresh token")
 
-            token_pair = self._token_provider.create_token_pair(
-                payload=TokenPayload(
-                    id=user.id,
-                    session_id=session.id,
-                    username=user.username,
-                    is_platform_admin=user.is_platform_admin,
-                    is_verified_email=user.is_verified_email,
-                ),
-                refresh_token_expires_at=session.expires_at,
-            )
+        token_pair = self._token_provider.create_token_pair(
+            payload=TokenPayload(
+                id=user.id,
+                session_id=session.id,
+                username=user.username,
+                is_platform_admin=user.is_platform_admin,
+                is_verified_email=user.is_verified_email,
+            ),
+            refresh_token_expires_at=session.expires_at,
+        )
 
-            next_refresh_token_hash = await self._sha256_hasher.to_hash(
-                string=token_pair.refresh_token,
-            )
+        next_refresh_token_hash = await self._sha256_hasher.to_hash(
+            string=token_pair.refresh_token,
+        )
 
+        async with self._unit_of_work:
             rotated = await self._sessions_repository.update_refresh_token(
                 session_id=session.id,
                 current_refresh_token_hash=refresh_token_hash,
@@ -73,7 +76,7 @@ class UserRefreshUseCase(IUseCase[UserRefreshInput, TokenPair]):
                 now=datetime_with_tz(),
             )
 
-            if not rotated:
-                raise AuthenticationException("Invalid or expired refresh token")
+        if not rotated:
+            raise AuthenticationException("Invalid or expired refresh token")
 
-            return token_pair
+        return token_pair

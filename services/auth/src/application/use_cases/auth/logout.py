@@ -41,10 +41,10 @@ class UserLogoutUseCase(IUseCase[UserLogoutInput, None]):
                 revoked_at=datetime_with_tz(),
             )
 
-            await self._nosql_client.set(
-                key=self._session_revoked_key_format.format(
-                    session_id=input_data.session_id,
-                ),
-                value=self._session_revoked_value,
-                ttl=self._access_token_ttl_seconds,
-            )
+        await self._nosql_client.set(
+            key=self._session_revoked_key_format.format(
+                session_id=input_data.session_id,
+            ),
+            value=self._session_revoked_value,
+            ttl=self._access_token_ttl_seconds,
+        )

@@ -17,6 +17,7 @@ RUN uv sync \
     --no-editable
 
 COPY services/auth/src ./services/auth/src
+COPY services/trace ./services/trace
 
 
 FROM python:3.12-slim-trixie
@@ -28,16 +29,17 @@ ENV PYTHONUNBUFFERED=1 \
 
 RUN groupadd --system authuser \
     && useradd \
-        --system \
-        --gid authuser \
-        --no-create-home \
-        --shell /usr/sbin/nologin \
-        authuser
+    --system \
+    --gid authuser \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    authuser
 
 WORKDIR /app
 
 COPY --from=builder --chown=authuser:authuser /app/.venv /app/.venv
 COPY --from=builder --chown=authuser:authuser /app/services/auth/src /app/services/auth/src
+COPY --from=builder --chown=authuser:authuser /app/services/trace /app/services/trace
 
 USER authuser:authuser
 
@@ -52,4 +54,4 @@ ENTRYPOINT ["uvicorn", \
     "--access-log", \
     "--timeout-graceful-shutdown", "10", \
     "--lifespan", "on", \
-    "--workers", "1"]
+    "--workers", "2"]
