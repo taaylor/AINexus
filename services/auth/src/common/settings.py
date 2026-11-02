@@ -1,3 +1,4 @@
+import os
 from functools import cached_property
 from typing import Final, Self
 
@@ -22,10 +23,12 @@ class DatabaseSettings(BaseSettings):
     database: str = "database"
     dbschema: str = "auth"
     echo: bool = False
-    pool_recycle: int = 20
-    pool_size: int = 10
-    max_pool_size: int = 10
+    pool_recycle: int = -1
+    pool_size: int = 20
+    max_pool_size: int = 30
     pool_pre_ping: bool = True
+    pgbouncer_host: str | None = None
+    pgbouncer_port: int = 6432
 
     @cached_property
     def dsn(self) -> str:
@@ -35,6 +38,20 @@ class DatabaseSettings(BaseSettings):
             password=self.password.get_secret_value(),
             host=self.host,
             port=self.port,
+            path=self.database,
+        ).unicode_string()
+
+    @cached_property
+    def dsnpgbouncer(self) -> str | None:
+        if self.pgbouncer_host is None:
+            return None
+
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg",
+            username=self.username,
+            password=self.password.get_secret_value(),
+            host=self.pgbouncer_host,
+            port=self.pgbouncer_port,
             path=self.database,
         ).unicode_string()
 
@@ -86,8 +103,8 @@ class HasherSettings(BaseSettings):
     )
 
     time_cost: int = 2
-    memory_cost: int = 51200
-    parallelism: int = 1
+    memory_cost: int = 19456
+    parallelism: int = (os.cpu_count() or 1) * 2
     hash_len: int = 32
     salt_len: int = 16
 
@@ -118,6 +135,7 @@ class Settings(BaseSettings):
     )
 
     debug: bool = False
+    trace: bool = True
     postgres: DatabaseSettings = DatabaseSettings()
     redis: RedisSettings = RedisSettings()
     hasher: HasherSettings = HasherSettings()

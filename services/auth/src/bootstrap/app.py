@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
+from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 from auth.src.bootstrap.di import initialization_async_container
 from auth.src.common.logger import init_logging
+from auth.src.common.settings import settings
 from auth.src.presentation.api.exchandlers import exception_handlers
 from auth.src.presentation.api.middleware import (
     CorrectCORSMiddleware,
@@ -17,6 +19,7 @@ from auth.src.presentation.api.routers import router as api_router
 def initialization_app() -> FastAPI:
     init_logging()
     container = initialization_async_container()
+    trace_provider = None
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -24,6 +27,8 @@ def initialization_app() -> FastAPI:
             yield
         finally:
             await container.close()
+            if trace_provider is not None:
+                trace_provider.shutdown()
 
     app = FastAPI(
         title="AINexus.Auth",
@@ -42,7 +47,18 @@ def initialization_app() -> FastAPI:
     )
 
     app.include_router(api_router)
+
+    app.add_middleware(
+        PrometheusMiddleware,
+        group_paths=True,
+        app_name="AINexus.Auth",
+        prefix="fastapi",
+        skip_paths=["/metrics"],
+    )
+    app.add_route("/metrics", handle_metrics, methods=["GET"])
+
     app.add_middleware(ExceptionLoggingMiddleware)
+
     app.add_middleware(
         CorrectCORSMiddleware,
         allow_origins=["*"],
@@ -50,6 +66,12 @@ def initialization_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
     setup_dishka(container, app)
+
+    if settings.trace:
+        from services.trace.tracer import init_trace
+
+        trace_provider = init_trace(app, service="AINexus.Auth")
 
     return app

@@ -49,27 +49,28 @@ class UserLoginUseCase(IUseCase[UserLoginInput, TokenPair]):
                 login=input_data.login,
             )
 
-            if user is None or not await self._argon2_hasher.verify(
-                string=input_data.password,
-                hashed_string=user.password_hash,
-            ):
-                raise AuthenticationException("Invalid login or password")
+        if user is None or not await self._argon2_hasher.verify(
+            string=input_data.password,
+            hashed_string=user.password_hash,
+        ):
+            raise AuthenticationException("Invalid login or password")
 
-            session_id = uuid7()
-            token_pair = self._token_provider.create_token_pair(
-                payload=TokenPayload(
-                    id=user.id,
-                    session_id=cast(UUID, session_id),
-                    username=user.username,
-                    is_platform_admin=user.is_platform_admin,
-                    is_verified_email=user.is_verified_email,
-                ),
-            )
+        session_id = uuid7()
+        token_pair = self._token_provider.create_token_pair(
+            payload=TokenPayload(
+                id=user.id,
+                session_id=cast(UUID, session_id),
+                username=user.username,
+                is_platform_admin=user.is_platform_admin,
+                is_verified_email=user.is_verified_email,
+            ),
+        )
 
-            refresh_token_hash = await self._sha256_hasher.to_hash(
-                string=token_pair.refresh_token,
-            )
+        refresh_token_hash = await self._sha256_hasher.to_hash(
+            string=token_pair.refresh_token,
+        )
 
+        async with self._unit_of_work:
             await self._sessions_repository.create(
                 session_id=cast(UUID, session_id),
                 user_id=user.id,

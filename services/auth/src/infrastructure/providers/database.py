@@ -40,7 +40,7 @@ class DatabaseProvider(Provider):
     @provide(scope=Scope.APP)
     async def engine(self) -> AsyncGenerator[AsyncEngine, None]:
         engine = create_async_engine(
-            url=self.settings.postgres.dsn,
+            url=self.settings.postgres.dsnpgbouncer or self.settings.postgres.dsn,
             echo=self.settings.postgres.echo,
             pool_size=self.settings.postgres.pool_size,
             max_overflow=self.settings.postgres.max_pool_size,
@@ -48,6 +48,11 @@ class DatabaseProvider(Provider):
             pool_pre_ping=self.settings.postgres.pool_pre_ping,
         )
         try:
+            if self.settings.trace:
+                from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+                SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
+
             yield engine
         finally:
             await engine.dispose()

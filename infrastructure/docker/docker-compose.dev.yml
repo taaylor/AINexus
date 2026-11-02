@@ -4,15 +4,78 @@ x-restart: &x-restart-svc
   restart: on-failure
 
 services:
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.external-url=http://localhost/prometheus/
+      - --web.route-prefix=/
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - auth
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+  pgbouncer:
+    image: pgbouncer/pgbouncer:1.25.2
+    env_file:
+      - ../pgbouncer/pgbouncer.env
+    environment:
+      DATABASES_HOST: postgres
+      DATABASES_PORT: "5432"
+      DATABASES_USER: ${POSTGRES_USER:-username}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DATABASES_DBNAME: ${POSTGRES_DB:-database}
+      DATABASES_CLIENT_SIDE_DBNAME: ${POSTGRES_DB:-database}
+      PGBOUNCER_ADMIN_USERS: ${POSTGRES_USER:-username}
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "nc -w 1 127.0.0.1 6432 </dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    <<: *x-restart-svc
+
   auth:
     build:
       context: ../..
       dockerfile: services/auth/Dockerfile
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      pgbouncer:
+        condition: service_healthy
     environment:
+      TRACE: "true"
+      TRACE_OTLP_ENDPOINT: http://jaeger:4317
+      TRACE_INSECURE: "true"
       POSTGRES_HOST: postgres
+      POSTGRES_USERNAME: ${POSTGRES_USER:-username}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DATABASE: ${POSTGRES_DB:-database}
+      POSTGRES_PGBOUNCER_HOST: pgbouncer
+      POSTGRES_PGBOUNCER_PORT: "6432"
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       REDIS_HOST: redis
       REDIS_DB: ${REDIS_DB:-0}
@@ -21,18 +84,21 @@ services:
     deploy:
       resources:
         limits:
-          cpus: 0.25
-          memory: 512M
+          cpus: 2
+          memory: 4GB
   nginx:
     build:
       context: ../nginx
       dockerfile: Dockerfile
     depends_on:
       - auth
+      - prometheus
+      - jaeger
     volumes:
       - ../nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
       - ../nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d:ro
       - ../nginx/lua:/etc/nginx/lua:ro
+      - ../nginx/.htpasswd:/etc/nginx/.htpasswd:ro
     environment:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       REDIS_HOST: redis
@@ -45,24 +111,26 @@ services:
     deploy:
       resources:
         limits:
-          cpus: 0.25
-          memory: 256MB
+          cpus: 1
+          memory: 1GB
 
   postgres:
     image: postgres:17
     environment:
-      POSTGRES_PASSWORD: "password"
-      POSTGRES_USER: "username"
-      POSTGRES_DB: "database"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_USER: ${POSTGRES_USER:-username}
+      POSTGRES_DB: ${POSTGRES_DB:-database}
     ports:
       - '127.0.0.1:5432:5432'
     <<: *x-restart-svc
     deploy:
       resources:
         limits:
-          cpus: 1
-          memory: 2GB
+          cpus: 2
+          memory: 4GB
     shm_size: 256mb
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -75,5 +143,9 @@ services:
     deploy:
       resources:
         limits:
-          cpus: 0.25
-          memory: 256M
+          cpus: 0.5
+          memory: 512MB
+
+volumes:
+  prometheus_data:
+  pgdata:
