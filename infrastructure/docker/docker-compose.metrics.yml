@@ -1,0 +1,87 @@
+x-restart: &x-restart-svc
+  restart: on-failure
+
+services:
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.6
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    <<: *x-restart-svc
+
+  postgres-exporter:
+    image: ghcr.io/prometheus-community/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB:-database}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_EXPORTER_USER:-postgres_exporter}
+      DATA_SOURCE_PASS: ${POSTGRES_EXPORTER_PASSWORD:-${POSTGRES_PASSWORD:-password}}
+    depends_on:
+      - postgres
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.external-url=http://localhost:9090/
+      - --web.route-prefix=/
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - auth
+      - cadvisor
+      - postgres-exporter
+    ports:
+      - 127.0.0.1:9090:9090
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+  grafana:
+    image: grafana/grafana:13.0.12-ubuntu-slim
+    environment:
+      GF_SERVER_ROOT_URL: http://localhost:3000/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "false"
+    volumes:
+      - ../grafana/provisioning/datasources/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ../grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    ports:
+      - 127.0.0.1:3000:3000
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
+    ports:
+      - 127.0.0.1:16686:16686
+    <<: *x-restart-svc
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1GB
+
+volumes:
+  grafana_data:
+  prometheus_data:

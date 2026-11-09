@@ -1,4 +1,3 @@
-import os
 from functools import cached_property
 from typing import Final, Self
 
@@ -104,7 +103,7 @@ class HasherSettings(BaseSettings):
 
     time_cost: int = 2
     memory_cost: int = 19456
-    parallelism: int = (os.cpu_count() or 1) * 2
+    parallelism: int = 1
     hash_len: int = 32
     salt_len: int = 16
 

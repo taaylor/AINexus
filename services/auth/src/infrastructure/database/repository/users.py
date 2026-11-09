@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import case, select
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,18 +23,32 @@ class UsersRepository(IUsersRepository):
         """Fetch login credentials by username or email.
 
         SQL:
-
-        SELECT
-            u.id,
-            u.username,
-            u.is_platform_admin,
-            c.password_hash,
-            c.is_verified_email
-        FROM auth.users AS u
-            JOIN auth.users_cred AS c ON c.id = u.id
-        WHERE u.username = :login OR c.email = :login
-        ORDER BY CASE WHEN u.username = :login THEN 0 ELSE 1 END
-        LIMIT 1
+        (
+            SELECT
+                u.id,
+                u.username,
+                u.is_platform_admin,
+                c.password_hash,
+                c.is_verified_email
+            FROM auth.users AS u
+                JOIN auth.users_cred AS c ON c.id = u.id
+            WHERE u.username = :login
+            LIMIT 1
+        )
+        UNION ALL
+        (
+            SELECT
+                u.id,
+                u.username,
+                u.is_platform_admin,
+                c.password_hash,
+                c.is_verified_email
+            FROM auth.users AS u
+                JOIN auth.users_cred AS c ON c.id = u.id
+            WHERE c.email = :login
+            LIMIT 1
+        )
+        LIMIT 1;
         """
         stmt = (
             select(
@@ -45,12 +59,17 @@ class UsersRepository(IUsersRepository):
                 UserCredentialModel.is_verified_email,
             )
             .join(UserCredentialModel, UserModel.id == UserCredentialModel.id)
-            .where((UserModel.username == login) | (UserCredentialModel.email == login))
-            .order_by(case((UserModel.username == login, 0), else_=1))
             .limit(1)
         )
 
-        result = (await self._session.execute(stmt)).one_or_none()
+        result = (
+            await self._session.execute(
+                stmt.where(UserModel.username == login)
+                .union_all(stmt.where(UserCredentialModel.email == login))
+                .limit(1)
+            )
+        ).one_or_none()
+
         if result is None:
             return None
 
