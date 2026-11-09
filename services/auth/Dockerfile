@@ -54,4 +54,4 @@ ENTRYPOINT ["uvicorn", \
     "--access-log", \
     "--timeout-graceful-shutdown", "10", \
     "--lifespan", "on", \
-    "--workers", "2"]
+    "--workers", "1"]

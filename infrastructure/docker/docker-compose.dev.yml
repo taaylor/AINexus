@@ -1,37 +1,12 @@
 name: ainexus-dev
 
+include:
+  - path: docker-compose.metrics.yml
+
 x-restart: &x-restart-svc
   restart: on-failure
 
 services:
-  prometheus:
-    image: prom/prometheus:v3.14.0
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --web.external-url=http://localhost/prometheus/
-      - --web.route-prefix=/
-    volumes:
-      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    depends_on:
-      - auth
-    <<: *x-restart-svc
-    deploy:
-      resources:
-        limits:
-          cpus: 1
-          memory: 1GB
-
-  jaeger:
-    image: cr.jaegertracing.io/jaegertracing/jaeger:2.22.0
-    <<: *x-restart-svc
-    deploy:
-      resources:
-        limits:
-          cpus: 1
-          memory: 1GB
-
   pgbouncer:
     image: pgbouncer/pgbouncer:1.25.2
     env_file:
@@ -80,25 +55,24 @@ services:
       REDIS_HOST: redis
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+      POSTGRES_POOL_SIZE: 50
+      POSTGRES_MAX_POOL_SIZE: 10
     <<: *x-restart-svc
     deploy:
       resources:
         limits:
           cpus: 2
-          memory: 4GB
+          memory: 1GB
   nginx:
     build:
       context: ../nginx
       dockerfile: Dockerfile
     depends_on:
       - auth
-      - prometheus
-      - jaeger
     volumes:
       - ../nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
       - ../nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d:ro
       - ../nginx/lua:/etc/nginx/lua:ro
-      - ../nginx/.htpasswd:/etc/nginx/.htpasswd:ro
     environment:
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       REDIS_HOST: redis
@@ -120,6 +94,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_USER: ${POSTGRES_USER:-username}
       POSTGRES_DB: ${POSTGRES_DB:-database}
+      POSTGRES_EXPORTER_USER: ${POSTGRES_EXPORTER_USER:-postgres_exporter}
+      POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:-${POSTGRES_PASSWORD:-password}}
     ports:
       - '127.0.0.1:5432:5432'
     <<: *x-restart-svc
@@ -128,9 +104,10 @@ services:
         limits:
           cpus: 2
           memory: 4GB
-    shm_size: 256mb
+    shm_size: 512mb
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+      - ../postgres/create-exporter-role.sh:/docker-entrypoint-initdb.d/20-exporter-role.sh:ro
 
   redis:
     image: redis:7-alpine
@@ -147,5 +124,4 @@ services:
           memory: 512MB
 
 volumes:
-  prometheus_data:
   pgdata:

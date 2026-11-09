@@ -1,8 +1,10 @@
 import secrets
 from datetime import datetime, timedelta
-from typing import Final
+from typing import Final, cast
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from auth.src.common.settings import Settings
 from auth.src.common.utils import datetime_with_tz
@@ -23,7 +25,13 @@ class JWTCoder:
         *,
         settings: Settings,
     ) -> None:
-        self.private_key = settings.jwt.private_key.get_secret_value()
+        self.private_key = cast(
+            RSAPrivateKey,
+            load_pem_private_key(
+                settings.jwt.private_key.get_secret_value().encode(),
+                password=None,
+            ),
+        )
         self.access_token_ttl_seconds = settings.jwt.access_token_ttl_seconds
         self.refresh_token_ttl_seconds = settings.jwt.refresh_token_ttl_seconds
         self.algo_access = settings.jwt.algo_access
